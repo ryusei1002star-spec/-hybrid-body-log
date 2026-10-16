@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<title>Hybrid Body Log</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0d0d0f;color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+header{padding:20px;position:sticky;top:0;background:#111;z-index:2;border-bottom:1px solid #333}
+main{max-width:700px;margin:auto;padding:14px 12px 90px}
+h1{margin:0;font-size:26px}h2{margin:0 0 8px}.muted{color:#999;font-size:13px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+button{border:0;border-radius:12px;padding:12px;background:#252529;color:white;font-weight:700;font-size:14px}
+button:active{opacity:.75}.active,.primary{background:#ff5a00}
+.secondary{background:#34343a}.danger{background:#442222;color:#ff9999}
+.card{background:#19191c;border:1px solid #303035;border-radius:17px;padding:16px;margin-bottom:12px}
+.tag{color:#ff8b50;font-size:12px;font-weight:800}.ex{border-top:1px solid #303035;padding:14px 0}.ex:first-child{border-top:0}
+.exhead{display:flex;justify-content:space-between;gap:10px}.target{color:#ff9b6b;font-size:12px;font-weight:800}
+.note{color:#999;font-size:12px;margin:5px 0 9px}.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.explainBtn{margin:8px 0 2px;padding:8px 10px;font-size:12px;background:#34343a}.guide{display:none;background:#101012;border:1px solid #38383e;border-radius:12px;padding:12px;margin:8px 0;color:#ddd;font-size:13px;line-height:1.65}.guide b{color:#ffad82}.guide ul{padding-left:19px;margin:6px 0}
+label{font-size:10px;color:#999}select{width:100%;margin-top:4px;padding:10px;border-radius:9px;border:1px solid #333;background:#0f0f11;color:#fff;font-size:14px}input,textarea{width:100%;margin-top:4px;padding:10px;border-radius:9px;border:1px solid #333;background:#0f0f11;color:#fff;font-size:15px}
+textarea{min-height:72px;resize:vertical}.row{display:flex;gap:8px}.row>*{flex:1}
+.history{border-top:1px solid #333;padding:10px 0}.empty{text-align:center;color:#999;padding:30px}
+.small{font-size:11px}.success{color:#79e08a}.sharebox{background:#111;border:1px solid #333;border-radius:12px;padding:12px;white-space:pre-wrap;font-size:12px;line-height:1.5;max-height:260px;overflow:auto}
+.setrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}.setbox{border:1px solid #34343a;border-radius:10px;padding:7px}.setbox label{display:block}.setbox input{padding:8px 5px;font-size:14px}.miniBtn{padding:8px;font-size:12px;margin-top:6px}.stat{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat div{background:#111;border-radius:12px;padding:12px}.stat b{font-size:20px}
+</style>
+</head>
+<body>
+<header><h1>Hybrid Body Log</h1><div class="muted">筋力 × 筋量 × ランニング</div></header>
+<main>
+  <div class="tabs">
+    <button class="active" onclick="tab('today',this)">今日</button>
+    <button onclick="tab('history',this)">履歴</button>
+    <button onclick="tab('data',this)">データ</button>
+  </div>
+  <div id="today"></div>
+  <div id="history" style="display:none"></div>
+  <div id="data" style="display:none"></div>
+</main>
+
+<script>
+const P=[
+
+["A","筋トレ","プッシュ","胸・肩・三頭",[["スミスベンチプレス","3","6–10","2–3分","RIR 1–2"],["インクラインダンベルプレス","3","8–12","90–120秒","胸上部"],["チェストプレス","2","10–15","90秒","最後2–3回がきつい"],["サイドレイズ","3","12–20","60–90秒","反動を抑える"],["ケーブルプレスダウン","3","10–15","60–90秒","肘を固定"],["ケーブルクランチ","2","10–15","60秒","腹部を丸める"]]],
+["B","ラン","イージーラン","会話できる強度",[["イージーラン","1","25–35分","—","RPE 4–5"],["ウォーキング","1","5–10分","—","クールダウン"]]],
+["C","筋トレ","プル","背中・後肩・二頭",[["ラットプルダウン","3","8–12","90–120秒","胸を張る"],["アシストチンニング","3","6–10","2分","最後1–2回がきつい"],["シーテッドロウ","3","8–12","90–120秒","肩をすくめない"],["ワンハンドロウ","2","10–12/側","90秒","左右差を確認"],["リアデルトフライ","3","12–20","60–90秒","反動を抑える"],["ダンベルカール","3","10–15","60–90秒","肘を固定"]]],
+["D","休養","回復","完全休養または軽い散歩",[]],
+["E","筋トレ","レッグ","脚・臀部・ランニング耐性",[["スクワット","3","6–10","2–3分","RIR 2・フォーム優先"],["レッグプレス","3","8–12","2分","深さを一定に"],["ルーマニアンデッドリフト","2","8–12","2分","ハム・臀部"],["レッグカール","3","10–15","90秒","ゆっくり戻す"],["レッグエクステンション","2","10–15","90秒","膝に痛みが出ない範囲"],["カーフレイズ","3","12–20","60–90秒","最下部で伸ばす"],["プランク","2","30–60秒","60秒","体幹"]]],
+["F","ラン","ランニング","まず5km完走",[["ランニング","1","3–5 km","—","RPE 5–6・距離優先"],["ウォーキング","1","5–10分","—","クールダウン"]]],
+["G","筋トレ","フルボディ","余力がある週だけ",[["インクラインスミスベンチ","3","8–12","2分","胸"],["ラットプルダウン","3","8–12","90–120秒","背中"],["レッグプレス","3","10–15","2分","RIR 2–3"],["ショルダープレス","2","8–12","90秒","肩"],["サイドレイズ","2","12–20","60秒","肩中部"],["アームカール","2","10–15","60秒","二頭"],["トライセプスプレスダウン","2","10–15","60秒","三頭"]]]
+
+];
+
+const GUIDE={
+"スミスベンチプレス":["胸・肩・三頭","1. ベンチに仰向けになり、目線をバーの真下〜少し頭側に合わせる。","2. 肩甲骨を軽く寄せて下げ、足裏を床につける。","3. バーを胸の中〜下部へゆっくり下ろし、手首を立てたまま押し上げる。","腰を反らしすぎない。痛みがあれば中止し、セーフティを設定する。"],
+"インクラインダンベルプレス":["胸上部・肩・三頭","1. ベンチを約20〜30度に設定し、ダンベルを胸上部の横に構える。","2. 肘を真横に開きすぎず、斜め下へゆっくり下ろす。","3. ダンベルを上に押し、上でぶつけずに戻す。","肩前面に痛みが出るほど深く下ろさない。"],
+"チェストプレス":["胸・三頭","1. 座席を調整し、ハンドルが胸の中〜下部の高さに来るようにする。","2. 肩をすくめず、背中をパッドにつける。","3. 押し切る直前まで押し、反動を使わずゆっくり戻す。","戻す時に重りをガシャンと落とさない。"],
+"サイドレイズ":["肩の横","1. ダンベルを体の横に持ち、肘を少し曲げる。","2. 肩をすくめず、腕を横へ肩の高さ付近まで上げる。","3. 反動を使わず2秒ほどかけて下ろす。","重さよりコントロール優先。鋭い肩の痛みが出たら中止。"],
+"ケーブルプレスダウン":["上腕三頭筋","1. ケーブルの前に立ち、肘を体の横に固定する。","2. 肘を伸ばしてバー／ロープを下へ押す。","3. 三頭筋を意識し、ゆっくり元の位置へ戻す。","肩や体重で押し込まず、肘の位置を大きく動かさない。"],
+"ケーブルクランチ":["腹筋","1. ロープを頭の横に持ち、膝立ちになる。","2. 腰を折るのではなく、肋骨を骨盤へ近づけるように背中を丸める。","3. 腹筋を縮めて一瞬止め、ゆっくり戻す。","腕でロープを引っ張らない。"],
+"イージーラン":["持久力の土台づくり","1. 最初の5分はかなりゆっくり走る。","2. 会話ができる強度（RPE 4〜5）を維持する。","3. 疲労が強ければ、ランとウォークを交互にしてよい。","ペースより楽に継続することを優先。"],
+"ウォーキング":["クールダウン","1. 走り終えたらゆっくり歩いて呼吸を整える。","2. 息が落ち着くまで5〜10分を目安に歩く。","急に止まらず、痛みやめまいがあれば安全な場所で休む。"],
+"ラットプルダウン":["広背筋・背中","1. 太ももパッドを調整し、バーを肩幅より少し広く握る。","2. 胸を軽く張り、肘を下へ引いてバーを鎖骨〜胸上部へ近づける。","3. 肩をすくめず、腕が伸びるまでゆっくり戻す。","バーを首の後ろへ引かない。上体を大きく反らさない。"],
+"アシストチンニング":["広背筋・二頭筋","1. 補助重量を設定し、膝または足をパッドに乗せる。","2. 胸を軽く張り、肘を下へ引いて体を持ち上げる。","3. 反動を使わず、肘が伸びる手前までゆっくり下ろす。","補助重量を使い、肩に痛みのない可動域で行う。"],
+"シーテッドロウ":["背中中央・広背筋","1. 胸を起こして座り、背中を丸めすぎない。","2. 肩をすくめず、肘を後ろへ引いてハンドルを腹部へ近づける。","3. 肩甲骨を軽く寄せ、ゆっくり腕を伸ばす。","上体を前後に振って引かない。"],
+"ワンハンドロウ":["広背筋・背中","1. 片手と片膝をベンチにつき、背中を床とほぼ平行にする。","2. ダンベルを腰の方向へ引き、肘を体側に沿わせる。","3. 体をひねらず、ゆっくり下ろす。左右同じ回数で行う。","腰をねじったり、肩をすくめたりしない。"],
+"リアデルトフライ":["肩の後ろ・背中上部","1. マシンまたはダンベルで、腕を軽く曲げて構える。","2. 肩をすくめず、腕を左右へ開く。","3. 肩の後ろを意識し、ゆっくり戻す。","重すぎる重量で反動を使わない。"],
+"ダンベルカール":["上腕二頭筋","1. 胸を起こし、肘を体の横に置いてダンベルを持つ。","2. 肘の位置を保ってダンベルを持ち上げる。","3. 力を抜かず、ゆっくり下ろす。","上体を反らして振り上げない。"],
+"スクワット":["太もも・臀部・体幹","1. 足を肩幅前後に開き、足裏全体で床を踏む。","2. お尻を後ろへ引きながら、膝もつま先の向きに沿って曲げる。","3. 背中を安定させ、足裏全体で床を押して立つ。","深さは痛みのない範囲。膝や腰に痛みが出たら中止し、重量を下げる。"],
+"レッグプレス":["太もも・臀部","1. 腰とお尻をシートにつけ、足を肩幅程度でプレートに置く。","2. 膝をつま先と同じ方向へ曲げ、無理のない深さまで下ろす。","3. 足裏全体で押し戻し、膝を勢いよくロックしない。","下ろしすぎて腰やお尻が丸まらないようにする。"],
+"ルーマニアンデッドリフト":["ハムストリングス・臀部","1. 膝を軽く曲げ、ダンベル／バーを太ももの前で持つ。","2. 背中を安定させたまま、お尻を後ろへ引いて股関節から前傾する。","3. 太もも裏が伸びたところから、お尻を前へ戻して立つ。","腰を丸めて下げない。重量より股関節の動きを優先。"],
+"レッグカール":["ハムストリングス","1. マシンを膝の位置とパッドに合わせる。","2. かかとをお尻へ近づけるように曲げる。","3. 反動を使わず、ゆっくり戻す。","戻す時に重りを落とさない。"],
+"レッグエクステンション":["太もも前","1. 膝の軸とマシンの回転軸を合わせ、パッドを足首の少し上に置く。","2. 膝を伸ばして脚を持ち上げ、上で一瞬止める。","3. ゆっくり戻す。","膝に痛みが出ない範囲で行い、痛みが続く場合は中止。"],
+"カーフレイズ":["ふくらはぎ","1. 足を腰幅にし、必要なら手すりを持つ。","2. かかとをゆっくり上げ、つま先立ちになる。","3. 上で一瞬止め、かかとをゆっくり下ろしてふくらはぎを伸ばす。","反動を使わず、足首を安定させる。"],
+"プランク":["腹部・体幹","1. 肘を肩の真下につき、つま先で体を支える。","2. 頭からかかとまで一直線を保ち、腹部と臀部に力を入れる。","3. 呼吸を止めず、姿勢が崩れる前に終了する。","腰が落ちたり、お尻が上がりすぎたりしたら休む。"],
+"インクラインスミスベンチ":["胸上部・肩・三頭","1. ベンチを約20〜30度にし、バーが胸上部へ下りる位置に合わせる。","2. 肩甲骨を軽く寄せ、足裏を床につける。","3. バーを胸上部へ下ろし、まっすぐ押し上げる。","セーフティを設定し、肩に痛みが出る深さは避ける。"],
+"ショルダープレス":["肩・三頭","1. 背もたれに背中をつけ、ハンドルを肩の高さで構える。","2. 腰を反らしすぎず、頭上へ押し上げる。","3. 肩に無理のない範囲でゆっくり下ろす。","腰を反って押さない。肩に痛みがあれば中止。"],
+"アームカール":["上腕二頭筋","1. 肘を体の横に置き、ダンベルやマシンのハンドルを持つ。","2. 肘を支点に曲げて持ち上げる。","3. ゆっくり下ろし、肘の位置を保つ。","反動を使わない。"],
+"トライセプスプレスダウン":["上腕三頭筋","1. ケーブルの前に立ち、肘を体側に固定する。","2. 肘を伸ばしてハンドルを下へ押す。","3. ゆっくり戻し、肘が前後に動きすぎないようにする。","肩や体幹で反動をつけない。"]
+};
+const GUIDE_DEFAULT=["フォームの基本","1. 使用するマシンや器具を体格に合わせて調整する。","2. 反動を使わず、動作をコントロールする。","3. 痛みのない可動域で行い、指定回数を目安にする。","鋭い痛み、めまい、しびれがあれば中止してください。"];
+const KEY="HBL";
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{i:0,logs:[],sessions:[]};
+if(!Array.isArray(S.logs))S.logs=[];
+if(!Array.isArray(S.sessions))S.sessions=[];
+
+const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const now=()=>new Date();
+const dateText=d=>new Date(d).toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+const dateKey=d=>new Date(d).toLocaleDateString("ja-JP");
+function last(n){return S.logs.find(x=>x.n===n)}
+function currentPlan(){return P[S.i%P.length]}
+
+function guideHTML(name){
+  const g=GUIDE[name]||GUIDE_DEFAULT;
+  return `<b>主に使う部位：</b>${esc(g[0])}<ul>${g.slice(1,4).map(x=>`<li>${esc(x)}</li>`).join("")}</ul><b>注意点：</b>${esc(g[4]||"痛みのない範囲で、反動を使わずに行う。")}`;
+}
+function toggleGuide(id){
+  const el=document.getElementById(id); if(!el)return;
+  const open=el.style.display!=="block"; el.style.display=open?"block":"none";
+  const btn=el.previousElementSibling; if(btn)btn.textContent=open?"解説を閉じる ▴":"やり方・フォームを解説 ▾";
+}
+
+const EXERCISE_OPTIONS=[...new Set(P.flatMap(p=>p[4].map(e=>e[0])).concat([
+"ダンベルベンチプレス","インクラインスミスベンチ","ペックフライ","ラテラルレイズマシン","ダンベルサイドレイズ","ショルダープレス","ローププレスダウン","トライセプスプレスダウン","ケーブルオーバーヘッドエクステンション","アームカール","ハンマーカール","チェストサポートロウ","ワイドグリップラットプルダウン","ストレートアームプルダウン","スミススクワット","ブルガリアンスクワット","ヒップスラスト","レッグカール","レッグエクステンション","ヒップアブダクション","アブダクション","レッグレイズ","ハンギングレッグレイズ","トレッドミルランニング","トレッドミルウォーキング","バイク","クロストレーナー","その他（自由入力）"
+]))];
+let extraExercises=[];
+function optionsHTML(selected){return EXERCISE_OPTIONS.map(n=>`<option value="${esc(n)}" ${n===selected?'selected':''}>${esc(n)}</option>`).join('')}
+function exerciseCard(e,j,extra=false){
+  const name=e[0], sets=Math.max(1,parseInt(e[1],10)||1), target=e[2]||'8–12', rest=e[3]||'60–90秒', note=e[4]||'';
+  let setHtml='';
+  for(let k=0;k<sets;k++) setHtml+=`<div class="setrow"><div class="setbox"><label>セット${k+1} 重量</label><input id="w${j}_${k}" placeholder="kg/結果" inputmode="decimal"></div><div class="setbox"><label>回数・時間</label><input id="r${j}_${k}" placeholder="${esc(target)}" inputmode="text"></div><div class="setbox"><label>RIR/RPE</label><input id="q${j}_${k}" placeholder="例 2" inputmode="decimal"></div></div>`;
+  const l=last(name);
+  return `<div class="ex exercise-card" data-exindex="${j}" data-extra="${extra?'1':'0'}">
+    <div class="exhead"><b>${extra?'追加種目 ':''}${esc(name)}</b><span class="target">${esc(target)}</span></div>
+    <label>種目を選択<select id="exsel${j}" onchange="renameExerciseTitle(${j})">${optionsHTML(name)}</select></label>
+    <div class="note">${esc(note)}　休憩 ${esc(rest)}${l?'｜前回 '+esc(l.d):''}</div>
+    <button type="button" class="explainBtn" onclick="toggleGuide('g${j}')">やり方・フォームを解説 ▾</button>
+    <div class="guide" id="g${j}">${guideHTML(name)}</div>
+    <div id="sets${j}">${setHtml}</div>
+    <button type="button" class="secondary miniBtn" onclick="addSet(${j})">＋ セット追加</button>
+    ${extra?`<button type="button" class="danger miniBtn" onclick="removeExercise(${j})">この種目を削除</button>`:''}
+  </div>`;
+}
+function render(){
+  let p=currentPlan();
+  let h=`<div class="card"><div class="tag">DAY ${p[0]} / ${p[1]}</div><h2>${p[2]}</h2><div class="muted">${p[3]}</div></div>`;
+  if(!p[4].length){
+    h+=`<div class="card"><div class="empty">今日は回復日です。疲れていれば完全休養でOK。</div><button class="primary" style="width:100%" onclick="completeRest()">回復日を完了 → 次へ</button></div>`;
+  }else{
+    h+=`<div class="card"><div class="muted">セットごとに重量・回数・RIRを入力できます。予定外の種目も追加できます。</div>`;
+    p[4].forEach((e,j)=>{h+=exerciseCard(e,j,false)});
+    extraExercises.forEach((e,i)=>{h+=exerciseCard(e,p[4].length+i,true)});
+    h+=`<button type="button" class="secondary" style="width:100%;margin:10px 0" onclick="addExercise()">＋ 代替・追加種目を追加</button>
+    <label>疲労感（0〜10）<input id="fatigue" placeholder="例：2（かなり元気なら0）" inputmode="numeric"></label>
+    <label style="display:block;margin-top:10px">メモ<textarea id="m" placeholder="体調・痛み・種目を変更した理由など"></textarea></label>
+    <button class="primary" style="width:100%;margin-top:12px" onclick="done()">記録して完了 →</button></div>`;
+  }
+  document.getElementById("today").innerHTML=h;
+}
+function renameExerciseTitle(j){
+  const card=document.querySelector(`[data-exindex="${j}"]`); if(!card)return;
+  const sel=document.getElementById('exsel'+j); const title=card.querySelector('.exhead b');
+  if(title)title.textContent=(card.dataset.extra==='1'?'追加種目 ':'')+sel.value;
+  const guide=card.querySelector('.guide'); if(guide)guide.innerHTML=guideHTML(sel.value);
+}
+function addSet(j){
+  const wrap=document.getElementById('sets'+j); if(!wrap)return;
+  const k=wrap.querySelectorAll('.setrow').length;
+  const row=document.createElement('div');row.className='setrow';
+  row.innerHTML=`<div class="setbox"><label>セット${k+1} 重量</label><input id="w${j}_${k}" placeholder="kg/結果" inputmode="decimal"></div><div class="setbox"><label>回数・時間</label><input id="r${j}_${k}" placeholder="回数" inputmode="text"></div><div class="setbox"><label>RIR/RPE</label><input id="q${j}_${k}" placeholder="例 2" inputmode="decimal"></div>`;
+  wrap.appendChild(row);
+}
+function addExercise(){
+  const p=currentPlan(); if(!p[4].length)return;
+  extraExercises.push(["ラテラルレイズ","2","10–15","60–90秒","追加種目"]); render();
+}
+function removeExercise(j){
+  const p=currentPlan(), base=p[4].length, i=j-base;
+  if(i>=0&&i<extraExercises.length){extraExercises.splice(i,1);render();}
+}
+function done(){
+  const p=currentPlan(),ts=now(),memo=document.getElementById("m")?.value||"", fatigue=document.getElementById('fatigue')?.value||'';
+  const entries=[]; const cards=[...document.querySelectorAll('.exercise-card')];
+  cards.forEach(card=>{
+    const j=Number(card.dataset.exindex), name=document.getElementById('exsel'+j)?.value||'';
+    const rows=[...card.querySelectorAll('.setrow')]; const sets=[];
+    rows.forEach((row,k)=>{
+      const a=document.getElementById(`w${j}_${k}`)?.value.trim()||'';
+      const b=document.getElementById(`r${j}_${k}`)?.value.trim()||'';
+      const c=document.getElementById(`q${j}_${k}`)?.value.trim()||'';
+      if(a||b||c) sets.push({weight:a,reps:b,rir:c});
+    });
+    if(sets.length){
+      const d=sets.map((x,i)=>`S${i+1}: ${x.weight?x.weight+' × ':''}${x.reps}${x.rir?' (RIR/RPE '+x.rir+')':''}`).join(' / ');
+      const log={date:ts.toISOString(),day:p[0],type:p[1],plan:p[2],n:name,d,m:memo,sets};
+      S.logs.unshift(log);entries.push(log);
+    }
+  });
+  if(entries.length||memo||fatigue){
+    S.sessions.unshift({date:ts.toISOString(),day:p[0],type:p[1],plan:p[2],memo, fatigue, entries});
+  }
+  extraExercises=[];next();
+}
+
+function completeRest(){
+  const p=currentPlan(),ts=now();
+  S.sessions.unshift({date:ts.toISOString(),day:p[0],type:p[1],plan:p[2],memo:"回復日",entries:[]});
+  next();
+}
+function next(){S.i=(S.i+1)%P.length;save();render()}
+
+function history(){
+  const h=S.sessions.length ? S.sessions.slice(0,40).map((s,idx)=>{
+    const rows=s.entries.map(x=>`<div>${esc(x.n)}：${esc(x.d)}</div>`).join("");
+    return `<div class="history"><b>DAY ${esc(s.day)} / ${esc(s.plan)}</b><br>${rows||"回復日"}<br><span class="muted">${dateText(s.date)}${s.memo?"｜"+esc(s.memo):""}</span></div>`;
+  }).join("") : `<div class="empty">まだ記録がありません。</div>`;
+  document.getElementById("history").innerHTML=`<div class="card"><h2>最近の記録</h2>${h}</div>`;
+}
+
+function makeChatGPTText(){
+  const recent=S.sessions.slice(0,20);
+  let out=`Hybrid Body Log 記録（ChatGPTフィードバック用）\n`;
+  out+=`現在のDAY：${currentPlan()[0]} / ${currentPlan()[2]}\n`;
+  out+=`記録セッション数：${S.sessions.length}\n\n`;
+  if(!recent.length)return out+"まだ記録がありません。";
+  recent.forEach(s=>{
+    out+=`【${dateText(s.date)}｜DAY ${s.day} ${s.plan}】\n`;
+    if(s.entries.length){
+      s.entries.forEach(x=>out+=`- ${x.n}: ${x.d}\n`);
+    }else out+="- 回復日\n";
+    if(s.fatigue!==undefined && s.fatigue!=="")out+=`- 疲労感: ${s.fatigue}/10\n`;
+    if(s.memo)out+=`- メモ: ${s.memo}\n`;
+    out+="\n";
+  });
+  out+=`フィードバックでは、前回比・重量設定・RIR/RPE・疲労・筋トレとランニングのバランス・次回の重量目安を評価してください。`;
+  return out;
+}
+
+async function copyChatGPT(){
+  const text=makeChatGPTText();
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("ChatGPT用の記録をコピーしました。このチャットに貼り付けてください。");
+  }catch(e){
+    const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
+    alert("ChatGPT用の記録をコピーしました。");
+  }
+}
+
+async function shareChatGPT(){
+  const text=makeChatGPTText();
+  if(navigator.share){
+    try{await navigator.share({title:"Hybrid Body Log 記録",text});}catch(e){}
+  }else{
+    await copyChatGPT();
+  }
+}
+
+function data(){
+  const recent=S.sessions.length;
+  document.getElementById("data").innerHTML=`
+  <div class="card">
+    <h2>ChatGPTフィードバック</h2>
+    <p class="muted">トレーニング後にここから記録をコピー／共有して、このチャットに送ってください。</p>
+    <div class="row">
+      <button class="primary" onclick="shareChatGPT()">共有</button>
+      <button class="secondary" onclick="copyChatGPT()">コピー</button>
+    </div>
+    <p class="small muted">${recent}セッション保存中</p>
+    <details><summary>送信される内容を確認</summary><div class="sharebox" style="margin-top:8px">${esc(makeChatGPTText())}</div></details>
+  </div>
+  <div class="card">
+    <h2>バックアップ</h2>
+    <div class="row">
+      <button onclick="backup()">書き出す</button>
+      <button onclick="document.getElementById('file').click()">復元</button>
+      <input id="file" type="file" accept=".json,application/json" style="display:none" onchange="restore(event)">
+    </div>
+    <p class="muted">記録はこのSafariに保存されます。機種変更やSafariのデータ削除に備えて、定期的にバックアップしてください。</p>
+    <button class="danger" style="width:100%" onclick="reset()">全削除</button>
+  </div>`;
+}
+
+function backup(){
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="hybrid-body-backup.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function restore(ev){
+  const file=ev.target.files?.[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const x=JSON.parse(r.result);
+      if(!x||!Array.isArray(x.logs))throw new Error();
+      if(!confirm("現在の記録をバックアップで置き換えますか？"))return;
+      S=x;if(!Array.isArray(S.sessions))S.sessions=[];
+      save();location.reload();
+    }catch(e){alert("バックアップの読み込みに失敗しました。");}
+  };
+  r.readAsText(file);
+}
+function reset(){
+  if(confirm("全記録を削除しますか？\nこの操作は元に戻せません。")){
+    localStorage.removeItem(KEY);location.reload();
+  }
+}
+function tab(x,b){
+  ["today","history","data"].forEach(id=>document.getElementById(id).style.display=id==x?"block":"none");
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+  if(x=="history")history();if(x=="data")data();
+}
+render();
+</script>
+</body>
+</html>
